@@ -1,6 +1,6 @@
 /**
  * PROJECT: ESP32 2.9" E-Paper Running Weather Station
- * DESCRIPTION: Professional Paperwhite-style weather and running gear display.
+ * DESCRIPTION: Battery-optimized (Deep Sleep) Weather and Running Gear Display.
  * AUTHOR: Christoph
  * DATE: 2026
  */
@@ -24,6 +24,10 @@
 #define EPD_BUSY   4 
 #define EPD_SCK   18 
 #define EPD_MOSI  23 
+
+// Deep Sleep Konfiguration
+#define uS_TO_S_FACTOR 1000000ULL  /* Umrechnungsfaktor von Mikrosekunden zu Sekunden */
+#define TIME_TO_SLEEP  900         /* Zeitintervall für Deep Sleep (900s = 15 Minuten) */
 
 // ==========================================
 // KONFIGURATION: SCHWELLENWERTE
@@ -136,22 +140,31 @@ void setup() {
   display.init(115200, true, 50, false);
   display.setRotation(1);
 
+  // WiFi verbinden
   WiFi.begin(SECRET_SSID, SECRET_PASS);
-  while (WiFi.status() != WL_CONNECTED) { delay(500); }
+  int counter = 0;
+  while (WiFi.status() != WL_CONNECTED && counter < 20) { 
+    delay(500); 
+    counter++;
+  }
   
-  configTime(3600, 3600, "pool.ntp.org");
-  fetchWeather();
-  updateDisplay();
-}
-
-void loop() {
-  static unsigned long lastUpdate = 0;
-  if (millis() - lastUpdate >= 900000 || lastUpdate == 0) {
-    lastUpdate = millis();
+  if (WiFi.status() == WL_CONNECTED) {
+    configTime(3600, 3600, "pool.ntp.org");
     fetchWeather();
     updateDisplay();
   }
-  delay(1000);
+
+  // Display schlafen legen (spart Strom)
+  display.hibernate();
+
+  // Deep Sleep konfigurieren
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  Serial.println("Entering Deep Sleep...");
+  esp_deep_sleep_start();
+}
+
+void loop() {
+  // Bleibt leer, da setup() den Deep Sleep startet
 }
 
 void updateDisplay() {
@@ -169,10 +182,8 @@ void updateDisplay() {
     display.setCursor(10, 20);
     display.print(DISPLAY_LOCATION_NAME);
 
-    // Icon nach RECHTS in der Box
     drawWeatherIcon(95, 30, currentDisplayWeather.weatherId, currentDisplayWeather.iconCode);
 
-    // Temperatur nach LINKS (bündig)
     display.setFont(&FreeSans9pt7b);
     display.setTextColor(GxEPD_BLACK);
     display.setCursor(10, 55); 
@@ -180,13 +191,13 @@ void updateDisplay() {
     display.setCursor(10, 72); 
     display.printf("Gef: %.1f C", currentDisplayWeather.feelsLike);
     
-    // Wind (Nach links gerückt)
+    // Wind
     display.drawLine(10, 95, 20, 95, GxEPD_BLACK);
     display.drawLine(8, 98, 18, 98, GxEPD_BLACK);
     display.setCursor(25, 100);
     display.printf("%.0f km/h", currentDisplayWeather.wind);
     
-    // Feuchte (Nach links gerückt für mehr Platz)
+    // Feuchte
     display.fillCircle(88, 97, 2, GxEPD_BLACK);
     display.fillTriangle(86, 97, 90, 97, 88, 92, GxEPD_BLACK);
     display.setCursor(95, 100); 
