@@ -1,8 +1,16 @@
+/**
+ * PROJECT: ESP32 2.9" E-Paper Running Weather Station
+ * DESCRIPTION: Professional Paperwhite-style weather and running gear display.
+ * AUTHOR: Christoph
+ * DATE: 2026
+ */
+
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <SPI.h>
 #include "time.h"
+#include "secrets.h" // Enthält SSID, Passwort und API-Keys
 
 // --- E-PAPER LIBRARIES ---
 #include <GxEPD2_3C.h>
@@ -128,7 +136,7 @@ void setup() {
   display.init(115200, true, 50, false);
   display.setRotation(1);
 
-  WiFi.begin("", "");
+  WiFi.begin(SECRET_SSID, SECRET_PASS);
   while (WiFi.status() != WL_CONNECTED) { delay(500); }
   
   configTime(3600, 3600, "pool.ntp.org");
@@ -159,7 +167,7 @@ void updateDisplay() {
     display.setFont(&FreeSansBold9pt7b);
     display.setTextColor(GxEPD_RED);
     display.setCursor(10, 20);
-    display.print("Penzberg");
+    display.print(DISPLAY_LOCATION_NAME);
 
     // Icon nach RECHTS in der Box
     drawWeatherIcon(95, 30, currentDisplayWeather.weatherId, currentDisplayWeather.iconCode);
@@ -178,7 +186,7 @@ void updateDisplay() {
     display.setCursor(25, 100);
     display.printf("%.0f km/h", currentDisplayWeather.wind);
     
-    // Feuchte (Deutlich weiter nach links geschoben)
+    // Feuchte (Nach links gerückt für mehr Platz)
     display.fillCircle(88, 97, 2, GxEPD_BLACK);
     display.fillTriangle(86, 97, 90, 97, 88, 92, GxEPD_BLACK);
     display.setCursor(95, 100); 
@@ -205,10 +213,11 @@ void updateDisplay() {
 
     // --- STATUS-BAR ---
     display.drawLine(0, 112, 296, 112, GxEPD_BLACK);
-    drawWifiIcon(15, 124); // WiFi Icon etwas tiefer
+    drawWifiIcon(15, 124); 
     display.setFont(NULL);
     display.setCursor(28, 118);
-    display.print("WiFi: FRITZ!Box 7560");
+    display.print("WiFi: ");
+    display.print(DISPLAY_WIFI_NAME);
     display.setCursor(190, 118);
     display.printf("Akt.: %02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
 
@@ -217,7 +226,7 @@ void updateDisplay() {
 
 void fetchWeather() {
   HTTPClient http;
-  String url = "http://api.openweathermap.org/data/2.5/weather?q=Penzberg,DE&units=metric&lang=de&appid=c8481c937603efe3bc060e60cb5cbd4b";
+  String url = "http://api.openweathermap.org/data/2.5/weather?q=" + String(SECRET_LOCATION) + "&units=metric&lang=de&appid=" + String(SECRET_OPENWEATHER_API_KEY);
   http.begin(url);
   if (http.GET() == 200) {
     JsonDocument doc;
