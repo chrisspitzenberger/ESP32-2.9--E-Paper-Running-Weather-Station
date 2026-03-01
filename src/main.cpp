@@ -262,14 +262,14 @@ String calculateRunningGear(float temp, float wind, int humidity, int weatherId,
   String alert = "";
 
   if (isTempo) {
-    if (temp >= T_LIMIT_SHORT) gearLower = "Kurz"; else gearLower = "Tights";
+    if (temp >= T_LIMIT_SHORT) gearLower = "Shorts"; else gearLower = "L. Tights";
     if (temp > T_LIMIT_SINGLET) gearUpper = "Singlet";
     else if (temp > T_LIMIT_TANK) gearUpper = "Tanktop";
     else if (temp > T_LIMIT_TSHIRT) gearUpper = "Shirt";
     else if (temp > T_LIMIT_LS) gearUpper = "Longsleeve";
     else gearUpper = "LS + Layer";
   } else {
-    if (temp >= DL_LIMIT_SHORT) gearLower = "Kurz"; else gearLower = "Tights";
+    if (temp >= DL_LIMIT_SHORT) gearLower = "Shorts"; else gearLower = "L. Tights";
     if (temp > DL_LIMIT_SINGLET) gearUpper = "Singlet";
     else if (temp > DL_LIMIT_TANK) gearUpper = "Tanktop";
     else if (temp > DL_LIMIT_TSHIRT) gearUpper = "Shirt";
